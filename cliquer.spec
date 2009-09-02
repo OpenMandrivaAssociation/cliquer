@@ -1,6 +1,6 @@
 Name:		cliquer
 Version:	1.2
-Release:	%mkrel 1
+Release:	%mkrel 2
 Group:		Sciences/Mathematics
 License:	GPL
 Summary:	Routines for finding cliques in an arbitrary weighted graph
@@ -12,6 +12,9 @@ URL:		http://users.tkk.fi/pat/cliquer.html
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 BuildRequires:	scons
+
+# Unlisted patches to upstream directly applied to spkg...
+Patch0:		cliquer-1.2-sagemath.patch
 
 %description
 Cliquer is a set of C routines for finding cliques in an arbitrary weighted
@@ -33,6 +36,8 @@ being flexible and easy to use.
 
 %prep
 %setup -q
+
+%patch0 -p1
 
 %build
 # generated shared library
