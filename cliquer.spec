@@ -1,6 +1,6 @@
 Name:		cliquer
 Version:	1.2
-Release:	%mkrel 2
+Release:	%mkrel 3
 Group:		Sciences/Mathematics
 License:	GPL
 Summary:	Routines for finding cliques in an arbitrary weighted graph
