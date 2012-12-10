@@ -67,3 +67,19 @@ rm -rf %{buildroot}
 %dir %{_includedir}/%{name}
 %{_includedir}/%{name}/*
 %doc README
+
+
+%changelog
+* Thu Dec 09 2010 Oden Eriksson <oeriksson@mandriva.com> 1.2-3mdv2011.0
++ Revision: 617042
+- the mass rebuild of 2010.0 packages
+
+* Wed Sep 02 2009 Paulo Andrade <pcpa@mandriva.com.br> 1.2-2mdv2010.0
++ Revision: 425982
++ rebuild (emptylog)
+
+* Wed Sep 02 2009 Paulo Andrade <pcpa@mandriva.com.br> 1.2-1mdv2010.0
++ Revision: 425628
+- Initial import of cliquer version 1.2
+- cliquer
+
