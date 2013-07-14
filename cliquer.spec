@@ -1,85 +1,113 @@
-Name:		cliquer
-Version:	1.2
-Release:	%mkrel 3
-Group:		Sciences/Mathematics
-License:	GPL
-Summary:	Routines for finding cliques in an arbitrary weighted graph
-Source0:	http://users.tkk.fi/~pat/cliquer/cliquer-1.2.tar.gz
-# Slightly modified sagemath 4.1.1 patches to generate a shared library
-Source1:	SConstruct
-Source2:	cl.h
-URL:		http://users.tkk.fi/pat/cliquer.html
-BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
+Name:           cliquer
+Version:        1.21
+Release:        1%{?dist}
+Summary:        Find cliques in arbitrary weighted graphs
+License:        GPLv2+
+URL:            http://users.tkk.fi/pat/cliquer.html
+Source0:        http://users.tkk.fi/~pat/%{name}/%{name}-%{version}.tar.gz
+Source1:        http://users.tkk.fi/~pat/%{name}/%{name}_fm.pdf
+Source2:        http://users.tkk.fi/~pat/%{name}/%{name}.pdf
+Source3:        http://users.tkk.fi/~pat/%{name}/%{name}_bm.pdf
+Source4:        http://users.tkk.fi/~pat/%{name}/basic.c
+Source5:        http://users.tkk.fi/~pat/%{name}/hamming.c
+Source6:        http://users.tkk.fi/~pat/%{name}/poly.c
+Source7:        http://users.tkk.fi/~pat/%{name}/tetromino.h
+# Man page formatting by Jerry James, text from the sources
+Source8:        %{name}.1
+# Sagemath patches and extra files. History can be found in related tracs at:
+#       http://trac.sagemath.org/sage_trac/ticket/6355
+#       http://trac.sagemath.org/sage_trac/ticket/5793
+# A private email was also sent to cliquer author asking for any comments
+# on Fedora cliquer review request and sagemath patches.
+Source9:        cl.h
+Source10:	%{name}.rpmlintrc
+Patch0:         %{name}-sagemath.patch
 
-BuildRequires:	scons
-
-# Unlisted patches to upstream directly applied to spkg...
-Patch0:		cliquer-1.2-sagemath.patch
+Requires:       %{name}-libs%{?_isa} = %{version}-%{release}
 
 %description
-Cliquer is a set of C routines for finding cliques in an arbitrary weighted
-graph. It uses an exact branch-and-bound algorithm recently developed by
-Patric Östergård. It is designed with the aim of being efficient while still
-being flexible and easy to use.
+The main cliquer package contains a command-line interface to the
+cliquer library.  Note that the upstream binary name is "cl", which is
+too generic for Fedora.  Therefore, the binary is named "cliquer".
+
+%package libs
+Summary:        Library to find cliques in arbitrary weighted graphs
+
+%description libs
+Cliquer is a set of C routines for finding cliques in an arbitrary
+weighted graph.  It uses an exact branch-and-bound algorithm developed
+by Patric Ã–stergÃ¥rd.  It is designed with the aim of being efficient
+while still being flexible and easy to use.
 
 %package devel
-Group:		Development/C
-Summary:	Routines for finding cliques in an arbitrary weighted graph
-Provides:	%{name}-devel = %{version}-%{release}
-Provides:	lib%{name}-devel = %{version}-%{release}
+Summary:        Development files for cliquer
+Requires:       %{name}-libs%{?_isa} = %{version}-%{release}
 
 %description devel
-Cliquer is a set of C routines for finding cliques in an arbitrary weighted
-graph. It uses an exact branch-and-bound algorithm recently developed by
-Patric Östergård. It is designed with the aim of being efficient while still
-being flexible and easy to use.
+Development files for cliquer.
 
 %prep
 %setup -q
-
+cp -p %{SOURCE1} %{SOURCE2} %{SOURCE3} .
 %patch0 -p1
 
-%build
-# generated shared library
-cp %{SOURCE1} `pwd`
-%scons
+mkdir example
+sed 's|"cliquer.h"|<cliquer/cliquer.h>|' %{SOURCE4} > example/basic.c
+sed 's|"cliquer.h"|<cliquer/cliquer.h>|' %{SOURCE5} > example/hamming.c
+sed 's|"cliquer.h"|<cliquer/cliquer.h>|' %{SOURCE6} > example/poly.c
+cp -p %{SOURCE7} example
 
-# generated standalone program
-%make CFLAGS='%{optflags}'
+sed -i \
+    's/59 Temple Place, Suite 330, Boston, MA  02111-1307/51 Franklin Street, Suite 500, Boston, MA  02110-1335/' \
+    LICENSE
+
+%build
+# The distributed Makefile just builds a binary named "cl".  However, the
+# examples show that the internal code is clearly meant to be used as a
+# library.  So we build a library by hand.
+gcc ${RPM_OPT_FLAGS} -fPIC -c cl.c
+gcc ${RPM_OPT_FLAGS} -fPIC -c cliquer.c
+gcc ${RPM_OPT_FLAGS} -fPIC -c graph.c
+gcc ${RPM_OPT_FLAGS} -fPIC -c reorder.c
+gcc ${RPM_OPT_FLAGS} -fPIC -shared -o libcliquer.so.%{version} \
+  -Wl,-soname=libcliquer.so.1 cl.o cliquer.o graph.o reorder.o
+ln -s libcliquer.so.%{version} libcliquer.so.1
+ln -s libcliquer.so.1 libcliquer.so
+
+# Now build the binary
+gcc ${RPM_OPT_FLAGS} -DENABLE_LONG_OPTIONS -DMAIN -c cl.c
+gcc ${RPM_OPT_FLAGS} -o cliquer cl.o -L. -lcliquer
 
 %install
-mkdir -p %{buildroot}%{_libdir} %{buildroot}%{_bindir} %{buildroot}%{_includedir}/%{name}
-cp -f libcliquer.so %{buildroot}%{_libdir}
-cp -f %{SOURCE2} *.h %{buildroot}%{_includedir}/%{name}
+# Install the library
+mkdir -p $RPM_BUILD_ROOT%{_libdir}
+cp -pP libcliquer.so* $RPM_BUILD_ROOT%{_libdir}
+chmod 0755 $RPM_BUILD_ROOT%{_libdir}/libcliquer.so.%{version}
 
-cp -f cl %{buildroot}/%{_bindir}
+# Install the binary
+mkdir -p $RPM_BUILD_ROOT%{_bindir}
+install -m 0755 -p cliquer $RPM_BUILD_ROOT%{_bindir}/cliquer
 
-%clean
-rm -rf %{buildroot}
+# Install the header file
+mkdir -p $RPM_BUILD_ROOT%{_includedir}/cliquer
+cp -p %{SOURCE9} cliquer.h cliquerconf.h graph.h misc.h reorder.h set.h $RPM_BUILD_ROOT%{_includedir}/cliquer
+
+# Install the man page
+mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
+cp -p %{SOURCE8} $RPM_BUILD_ROOT%{_mandir}/man1
+
+%check
+LD_LIBRARY_PATH=. make test CFLAGS="${RPM_OPT_FLAGS}"
 
 %files
-%defattr(-,root,root)
-%{_bindir}/cl
+%doc cliquer*.pdf
+%{_bindir}/%{name}
+%{_mandir}/man1/*
+
+%files libs
+%doc ChangeLog LICENSE README example
+%{_libdir}/libcliquer.so.*
 
 %files devel
-%defattr(-,root,root)
+%{_includedir}/%{name}/
 %{_libdir}/libcliquer.so
-%dir %{_includedir}/%{name}
-%{_includedir}/%{name}/*
-%doc README
-
-
-%changelog
-* Thu Dec 09 2010 Oden Eriksson <oeriksson@mandriva.com> 1.2-3mdv2011.0
-+ Revision: 617042
-- the mass rebuild of 2010.0 packages
-
-* Wed Sep 02 2009 Paulo Andrade <pcpa@mandriva.com.br> 1.2-2mdv2010.0
-+ Revision: 425982
-+ rebuild (emptylog)
-
-* Wed Sep 02 2009 Paulo Andrade <pcpa@mandriva.com.br> 1.2-1mdv2010.0
-+ Revision: 425628
-- Initial import of cliquer version 1.2
-- cliquer
-
