@@ -3,7 +3,7 @@ Version:        1.21
 Release:        1%{?dist}
 Summary:        Find cliques in arbitrary weighted graphs
 License:        GPLv2+
-URL:            http://users.tkk.fi/pat/cliquer.html
+URL:            https://users.tkk.fi/pat/cliquer.html
 Source0:        http://users.tkk.fi/~pat/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://users.tkk.fi/~pat/%{name}/%{name}_fm.pdf
 Source2:        http://users.tkk.fi/~pat/%{name}/%{name}.pdf
